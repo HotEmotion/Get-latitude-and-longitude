@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>获取经纬度json</title>
+    <style>
+        body,html{
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+        p{
+            margin: 0;
+        }
+        .container{
+            width: 80%;
+            height: 100%;
+            margin: 0 auto;
+            background-color: rgba(0,0,0,.2);
+        }
+        .title{
+            padding-top: 10px;
+            width: 800px;
+            height: 20px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+        }
+        .country,.city,.province{
+            margin-left: 10px;
+            height: 30px;
+            border-radius: 4px;
+        }
+        .province{
+            width: 130px;
+        }
+        .city{
+            width: 180px;
+        }
+        .item{
+            width: 80%;
+            height: 38%;
+            display: block;
+            margin: 0 auto;
+            margin-top: 30px;
+        }
+        textarea{
+            width: 100%;
+            height: 90%;
+        }
+        .button{
+            margin-left: 30px;
+            width: 80px;
+            height: 30px;
+            background-color: #5B6376;
+            color: white;
+            line-height: 30px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .data-title{
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">
+            <select class="country">
+                <option value="province">全国</option>
+            </select>
+            <select class="province">
+                <option value="null">请选择</option>
+            </select>
+            <select class="city">
+                <option value="null">请选择</option>
+            </select>
+            <div class="button">获取</div>
+        </div>
+        <div class="item">
+            <p class="data-title">geoCoordMap</p>
+            <textarea name="" id="result" >
+
+            </textarea>
+        </div>
+        <div class="item">
+            <p class="data-title">seriesData</p>
+            <textarea name="" id="nameResult" >
+
+            </textarea>
+        </div>
+    </div>
+    <script src="jquery.min.js"></script>
+    <script>
+        var provinceArr=[];
+        var proIndex='';
+        var cityIndex='';
+        $(function () {
+            getJson();
+            $('.province').change(function () {
+                proIndex=$(this).val();
+                if(proIndex=='null'){
+                    proIndex='';
+                    cityIndex='';
+                    $('.city').html('<option value="null">请选择</option>');
+                }
+                getJson(''+proIndex);;
+            })
+            $('.city').change(function () {
+                cityIndex=$(this).val();
+                getJson(''+proIndex,''+cityIndex);
+            })
+            $('.button').click(function () {
+                convertData(provinceArr);
+                renderName();
+            })
+        })
+        function convertData(data) {
+            var obj={};
+            data.forEach(function (item) {
+                var key=item.name;
+                var lngArr=item.center.split(',');
+                obj[key]=lngArr;
+            })
+            $('#result').text(JSON.stringify(obj));
+        }
+        function renderOption(data) {
+            var html='<option value="null">请选择</option>';
+            data.forEach(function (item,index) {
+                html+='<option value="'+index+'">'+item.name+'</option>';
+            })
+            return html;
+        }
+        function getJson(proIndex,cityIndex) {
+            provinceArr=[];
+            $.ajax({
+                type:"GET",
+                url:'./geoinfo-all.json',
+                success:function(jsonData){
+                        if(proIndex&&cityIndex){
+                            jsonData[proIndex].districts[cityIndex].districts.forEach(function (ele) {
+                                var obj={};
+                                obj.name=ele.name;
+                                obj.center=ele.center;
+                                provinceArr.push(obj);
+                            })
+                        }else if(proIndex){
+                            jsonData[proIndex].districts.forEach(function (ele) {
+                                var obj={};
+                                obj.name=ele.name;
+                                obj.center=ele.center;
+                                provinceArr.push(obj);
+                            })
+                            var html=renderOption(provinceArr);
+                            $('.city').html(html);
+                        }else {
+                            jsonData.forEach(function (item) {
+                                var obj={};
+                                obj.name=item.name;
+                                obj.center=item.center;
+                                provinceArr.push(obj);
+                            })
+                            var html=renderOption(provinceArr);
+                            $('.province').html(html);
+                        }
+                },
+                error: function (err) {
+                       console.log(err);
+                }
+            });
+        }
+        function renderName() {
+            var data=[];
+            provinceArr.forEach(function (item) {
+                var obj={};
+                obj.name=item.name;
+                obj.value=900;
+                data.push(obj);
+            })
+            $('#nameResult').text(JSON.stringify(data));
+
+        }
+    </script>
+</body>
+</html>
